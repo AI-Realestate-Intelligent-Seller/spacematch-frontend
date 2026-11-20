@@ -159,14 +159,20 @@ export function ForgotPasswordForm() {
   const [sent, setSent] = useState("");
   const [error, setError] = useState("");
 
+  const [emailError, setEmailError] = useState("");
+
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError("");
+    setEmailError("");
     try {
       const r = await forgot({ email: value(new FormData(e.currentTarget), "email").trim() }).unwrap();
       setSent(r.message);
     } catch (err) {
-      setError(errorMessage(err));
+      // 404: no account uses this email; 409: a broker who hasn't accepted their invite yet.
+      const status = (err as ApiError).status;
+      if (status === 404 || status === 409) setEmailError(errorMessage(err));
+      else setError(errorMessage(err));
     }
   }
 
@@ -185,7 +191,19 @@ export function ForgotPasswordForm() {
     <>
       <AuthHeading title="Forgot password">Enter your account email and we&apos;ll send you a link to choose a new password.</AuthHeading>
       <form onSubmit={submit} className="grid gap-4">
-        <Field label="Email">{(id) => <Input id={id} name="email" type="email" autoComplete="email" required />}</Field>
+        <Field label="Email" error={emailError}>
+          {(id) => (
+            <Input
+              id={id}
+              name="email"
+              type="email"
+              autoComplete="email"
+              required
+              aria-invalid={!!emailError}
+              onChange={() => emailError && setEmailError("")}
+            />
+          )}
+        </Field>
         <FormError>{error}</FormError>
         <Button type="submit" variant="primary" loading={isLoading} className="mt-1">
           Send reset link
