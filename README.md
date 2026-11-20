@@ -48,7 +48,16 @@ Route guards: signed-in pages send signed-out visitors to `/login?next=…`; age
 send brokers to Properties; login/sign-up send signed-in users into the app. Invite, reset and recover links work
 either way.
 
-## Production
+## Deploy on Vercel
+
+1. Deploy the backend first (see `backend/README.md` → Vercel) with `BASE_URL=https://spacematch-frontend.vercel.app`.
+2. In this project: Settings → Environment Variables → `BACKEND_URL` = the backend's production URL
+   (e.g. `https://spacematch-backend.vercel.app`, no trailing slash) for Production (and Preview if you use it).
+3. Redeploy. The `/api` proxy target is fixed at build time; without `BACKEND_URL` the Vercel build stops with
+   "Set BACKEND_URL …" instead of shipping a frontend that calls 127.0.0.1.
+4. Check `https://spacematch-frontend.vercel.app/api/me` returns JSON (`{"user":null,"csrf":…}`).
+
+## Production (other hosts)
 
 ```bash
 BACKEND_URL=https://your-backend.example.com npm run build
