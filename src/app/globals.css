@@ -1,0 +1,35 @@
+@import "tailwindcss";
+
+/* SpaceMatch design tokens (same palette as the original dashboard). */
+@theme {
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: ui-monospace, Menlo, Consolas, monospace;
+
+  --color-page: #f5f7fb;
+  --color-panel: #ffffff;
+  --color-panel-2: #eef3f7;
+  --color-line: #e0e7ee;
+  --color-ink: #17263b;
+  --color-muted: #637387;
+  --color-mint: #087e75;
+  --color-mint-soft: #e6f4f1;
+  --color-teal: #0c9488;
+  --color-blue: #2864bc;
+  --color-gold: #a8691a;
+  --color-danger: #b42318;
+  --color-danger-soft: #fdecea;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    @apply bg-page text-ink font-sans text-sm antialiased;
+  }
+  h1,
+  h2,
+  h3 {
+    @apply tracking-tight;
+  }
+}
