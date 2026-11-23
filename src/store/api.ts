@@ -12,6 +12,7 @@ import type {
   ApiKeyWithSecret,
   Broker,
   BrokerAccess,
+  FetchSummary,
   Invite,
   InviteResult,
   Me,
@@ -211,12 +212,20 @@ export const api = createApi({
       invalidatesTags: (_r, _e, { propertyId }) => ["Properties", { type: "Property", id: propertyId }, { type: "Reels", id: propertyId }],
     }),
     reelHistory: b.query<SnapshotRow[], string>({ query: (reelId) => `/reels/${reelId}/history`, providesTags: (_r, _e, id) => [{ type: "History", id }] }),
-    fetchPublic: b.mutation<{ job_id: string; reels: number }, { propertyId: string; showWindow: boolean; reelIds?: string[] }>({
+    /** Reads the links inside the request. `job_id` is set only for a visible-window fetch (live viewer);
+     *  otherwise `refresh` says how it went and, if links are left, continueFetch reads the rest. */
+    fetchPublic: b.mutation<
+      { job_id: string | null; refresh_id: string; reels: number; refresh: FetchSummary | null },
+      { propertyId: string; showWindow: boolean; reelIds?: string[] }
+    >({
       query: ({ propertyId, showWindow, reelIds }) => ({
         url: `/properties/${propertyId}/fetch-public`,
         method: "POST",
         body: { show_window: showWindow, reel_ids: reelIds ?? null },
       }),
+    }),
+    continueFetch: b.mutation<FetchSummary, string>({
+      query: (refreshId) => ({ url: `/refreshes/${refreshId}/continue`, method: "POST" }),
     }),
     scrapeJob: b.query<ScrapeJob, string>({ query: (jobId) => `/scrape-jobs/${jobId}`, keepUnusedDataFor: 0 }),
 
@@ -303,6 +312,7 @@ export const {
   useRemoveReelMutation,
   useReelHistoryQuery,
   useFetchPublicMutation,
+  useContinueFetchMutation,
   useScrapeJobQuery,
   useBrokersQuery,
   useInviteBrokerMutation,

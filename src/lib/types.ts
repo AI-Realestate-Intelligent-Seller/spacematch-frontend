@@ -133,6 +133,15 @@ export interface JobLine {
   msg: string;
 }
 
+/** A dashboard fetch read inside the request: how many links were read, failed or are still to read. */
+export interface FetchSummary {
+  id: string;
+  status: "queued" | "running" | "done" | "partial" | "failed" | "cancelled";
+  ok: number;
+  failed: number;
+  pending: number;
+}
+
 export interface ScrapeJob {
   id: string;
   status: "running" | "done" | "error";

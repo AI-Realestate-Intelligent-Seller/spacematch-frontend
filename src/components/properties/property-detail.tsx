@@ -15,6 +15,7 @@ import {
   api,
   errorMessage,
   useAddReelMutation,
+  useContinueFetchMutation,
   useDeletePropertyMutation,
   useEditPropertyMutation,
   useFetchPublicMutation,
@@ -43,7 +44,8 @@ export function PropertyDetail({ id }: { id: string }) {
   const [deleteProperty] = useDeletePropertyMutation();
   const [addReel, adding] = useAddReelMutation();
   const [removeReel] = useRemoveReelMutation();
-  const [fetchPublic, starting] = useFetchPublicMutation();
+  const [fetchPublic] = useFetchPublicMutation();
+  const [continueFetch] = useContinueFetchMutation();
 
   const [editOpen, setEditOpen] = useState(false);
   const [confirm, setConfirm] = useState<Confirm>(null);
@@ -96,12 +98,22 @@ export function PropertyDetail({ id }: { id: string }) {
     }, "Property updated");
   };
 
+  // The server reads the links inside the request (up to ~90 s each call, so it works on Vercel). If links are
+  // left, keep asking it to continue until the fetch is finished. A visible-window fetch opens the live viewer.
   const startFetch = (reelId?: string) =>
     run(async () => {
       setFetchingReel(reelId ?? "all");
       try {
         const r = await fetchPublic({ propertyId: id, showWindow, reelIds: reelId ? [reelId] : undefined }).unwrap();
-        setJobId(r.job_id);
+        if (r.job_id) return setJobId(r.job_id);
+        let summary = r.refresh!;
+        for (let i = 0; i < 20 && (summary.status === "queued" || summary.status === "running"); i++) {
+          if (i) await new Promise((resolve) => setTimeout(resolve, 3000)); // another tab may be reading it
+          summary = await continueFetch(r.refresh_id).unwrap();
+        }
+        if (summary.status === "queued" || summary.status === "running")
+          toast(`Still fetching ${summary.pending} link(s) - check back in a minute`);
+        else onFinished(summary.ok, summary.failed);
       } finally {
         setFetchingReel(null);
       }
@@ -229,7 +241,7 @@ export function PropertyDetail({ id }: { id: string }) {
                   />
                   Show browser window
                 </label>
-                <Button variant="primary" size="sm" disabled={!links.length} loading={fetchingReel === "all" && starting.isLoading} onClick={() => startFetch()}>
+                <Button variant="primary" size="sm" disabled={!links.length} loading={fetchingReel === "all"} onClick={() => startFetch()}>
                   <Play aria-hidden /> Fetch all
                 </Button>
               </>
